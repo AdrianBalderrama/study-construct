@@ -1,3 +1,5 @@
+import { QuestionRenderer } from './quiz/QuestionRenderer.js';
+
 export class UIManager {
     constructor() {
         this.views = {
@@ -18,6 +20,9 @@ export class UIManager {
             apiKeyInput: document.getElementById('api-key-input'),
             modelIdInput: document.getElementById('model-id-input')
         };
+
+        // Initialize question renderer
+        this.questionRenderer = new QuestionRenderer();
     }
 
     showView(viewName) {
@@ -27,15 +32,13 @@ export class UIManager {
 
     renderQuestion(question, onAnswer) {
         this.elements.questionText.textContent = question.question;
-        this.elements.optionsContainer.innerHTML = '';
 
-        question.options.forEach((opt, idx) => {
-            const btn = document.createElement('button');
-            btn.className = 'option-card';
-            btn.textContent = opt;
-            btn.onclick = () => onAnswer(idx, btn);
-            this.elements.optionsContainer.appendChild(btn);
-        });
+        // Use QuestionRenderer for type-aware rendering
+        this.questionRenderer.render(
+            question,
+            this.elements.optionsContainer,
+            onAnswer
+        );
     }
 
     updateProgress(progress) {
@@ -80,9 +83,16 @@ export class UIManager {
     }
 
     markAnswer(btn, isCorrect) {
-        btn.classList.add(isCorrect ? 'correct' : 'incorrect');
-        // Disable all buttons
-        const allBtns = this.elements.optionsContainer.querySelectorAll('button');
-        allBtns.forEach(b => b.disabled = true);
+        if (btn) {
+            btn.classList.add(isCorrect ? 'correct' : 'incorrect');
+        }
+
+        // Disable all interactive elements in the container
+        const container = this.elements.optionsContainer;
+        const buttons = container.querySelectorAll('button');
+        const inputs = container.querySelectorAll('input, select');
+
+        buttons.forEach(b => b.disabled = true);
+        inputs.forEach(i => i.disabled = true);
     }
 }

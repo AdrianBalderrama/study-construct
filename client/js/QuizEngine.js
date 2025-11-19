@@ -1,7 +1,9 @@
 /**
  * QuizEngine - Manages quiz state and logic
- * Enhanced with streak tracking and event emission for celebrations
+ * Enhanced with streak tracking, event emission, and advanced question types
  */
+
+import { QuestionValidator } from './quiz/QuestionValidator.js';
 
 export class QuizEngine {
     constructor() {
@@ -25,9 +27,9 @@ export class QuizEngine {
         return this.questions[this.currentIndex];
     }
 
-    submitAnswer(index) {
+    submitAnswer(answer) {
         const q = this.getCurrentQuestion();
-        const isCorrect = index === q.correctIndex;
+        const isCorrect = QuestionValidator.validate(q, answer);
 
         if (isCorrect) {
             this.score++;

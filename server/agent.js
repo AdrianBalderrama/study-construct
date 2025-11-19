@@ -62,20 +62,39 @@ class Team {
             `
         });
 
-        // Examiner: Creates quiz
+        // Examiner: Creates quiz with diverse question types
         const examiner = new LlmAgent({
             name: 'Examiner',
             model: model,
             instruction: `
-                You are a strict Examiner.
-                You will receive a list of facts.
-                Create 5 multiple-choice questions based on these facts.
+                You are an Examiner creating quiz questions.
+                You will receive facts about a topic.
+                Create exactly 5 questions with variety:
+                - 3 multiple-choice questions
+                - 1 true/false question  
+                - 1 fill-in-the-blank question
                 
-                Output MUST be valid JSON in this format:
+                Output valid JSON array (no markdown):
                 [
-                    { "question": "...", "options": ["..."], "correctIndex": 0 }
+                    {
+                        "type": "multiple-choice",
+                        "question": "Question text?",
+                        "options": ["A", "B", "C", "D"],
+                        "correctIndex": 0
+                    },
+                    {
+                        "type": "true-false",
+                        "question": "Statement to verify.",
+                        "correctAnswer": true
+                    },
+                    {
+                        "type": "fill-blank",
+                        "question": "Text with _____ blank.",
+                        "correctAnswer": "answer",
+                        "acceptableAnswers": ["answer", "Answer"],
+                        "caseSensitive": false
+                    }
                 ]
-                Do not include markdown formatting like \`\`\`json. Just the raw JSON.
             `
         });
 
