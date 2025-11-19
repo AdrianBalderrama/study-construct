@@ -1,0 +1,420 @@
+/**
+ * Effects CSS - Bauhaus-Inspired Visual Celebrations
+ * Using geometric shapes, bold colors, and clean design principles
+ */
+
+/* ============================================
+   BAUHAUS COLOR PALETTE (from bauhaus.css)
+   ============================================ */
+:root {
+    --bauhaus-red: #E93636;
+    --bauhaus-blue: #2E58A6;
+    --bauhaus-yellow: #F2C94C;
+    --bauhaus-black: #1A1A1A;
+    --bauhaus-white: #F5F5F5;
+}
+
+/* ============================================
+   BASE ANIMATIONS
+   ============================================ */
+
+/* Pulse - Geometric scale with sharp timing */
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.pulse {
+    animation: pulse 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* Shake - Sharp, geometric shake */
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0) rotate(0deg);
+    }
+
+    25% {
+        transform: translateX(-6px) rotate(-2deg);
+    }
+
+    75% {
+        transform: translateX(6px) rotate(2deg);
+    }
+}
+
+.shake {
+    animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+/* ============================================
+   BAUHAUS GEOMETRIC PARTICLES
+   ============================================ */
+
+/* Sparkle Particles - Geometric shapes (circles, squares, triangles) */
+.sparkle-particle {
+    position: fixed;
+    width: 12px;
+    height: 12px;
+    pointer-events: none;
+    z-index: 10000;
+    animation: sparkle-burst 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+/* Alternate between geometric shapes */
+.sparkle-particle:nth-child(3n+1) {
+    background: var(--bauhaus-red);
+    border-radius: 50%;
+    /* Circle */
+}
+
+.sparkle-particle:nth-child(3n+2) {
+    background: var(--bauhaus-blue);
+    /* Square - no border-radius */
+}
+
+.sparkle-particle:nth-child(3n) {
+    width: 0;
+    height: 0;
+    background: transparent;
+    border-left: 6px solid transparent;
+    border-right: 6px solid transparent;
+    border-bottom: 12px solid var(--bauhaus-yellow);
+}
+
+@keyframes sparkle-burst {
+    0% {
+        transform: translate(0, 0) scale(0) rotate(0deg);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(var(--tx), var(--ty)) scale(1) rotate(180deg);
+        opacity: 0;
+    }
+}
+
+/* Firework Particles - Bold geometric shapes */
+.firework-particle {
+    position: fixed;
+    width: 10px;
+    height: 10px;
+    pointer-events: none;
+    z-index: 10000;
+    border: 2px solid var(--bauhaus-black);
+    animation: firework-burst 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+}
+
+.firework-particle:nth-child(4n) {
+    border-radius: 50%;
+}
+
+@keyframes firework-burst {
+    0% {
+        transform: translate(0, 0) scale(1) rotate(0deg);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(var(--tx), var(--ty)) scale(0.5) rotate(360deg);
+        opacity: 0;
+    }
+}
+
+/* Confetti - Bauhaus geometric shapes falling */
+.confetti-particle {
+    position: fixed;
+    top: -20px;
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+    z-index: 10000;
+    border: 2px solid var(--bauhaus-black);
+    animation: confetti-fall linear forwards;
+}
+
+/* Rotate between shapes and colors */
+.confetti-particle:nth-child(6n+1) {
+    background: var(--bauhaus-red);
+    border-radius: 50%;
+}
+
+.confetti-particle:nth-child(6n+2) {
+    background: var(--bauhaus-blue);
+}
+
+.confetti-particle:nth-child(6n+3) {
+    background: var(--bauhaus-yellow);
+}
+
+.confetti-particle:nth-child(6n+4) {
+    background: var(--bauhaus-red);
+}
+
+.confetti-particle:nth-child(6n+5) {
+    background: var(--bauhaus-blue);
+    border-radius: 50%;
+}
+
+.confetti-particle:nth-child(6n) {
+    width: 0;
+    height: 0;
+    background: transparent;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-bottom: 16px solid var(--bauhaus-yellow);
+    border-top: none;
+}
+
+@keyframes confetti-fall {
+    to {
+        transform: translateY(110vh) rotate(720deg);
+        opacity: 0;
+    }
+}
+
+/* ============================================
+   STREAK BADGE - BAUHAUS STYLE
+   ============================================ */
+
+.streak-badge {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--bauhaus-yellow);
+    color: var(--bauhaus-black);
+    padding: 2rem 3rem;
+    border: 4px solid var(--bauhaus-black);
+    font-size: 2rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    z-index: 9999;
+    pointer-events: none;
+    box-shadow: 12px 12px 0 var(--bauhaus-black);
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
+/* Alternate badge colors for variety */
+.streak-badge:nth-of-type(2n) {
+    background: var(--bauhaus-red);
+    color: white;
+    box-shadow: 12px 12px 0 var(--bauhaus-blue);
+}
+
+.streak-badge:nth-of-type(3n) {
+    background: var(--bauhaus-blue);
+    color: white;
+    box-shadow: 12px 12px 0 var(--bauhaus-red);
+}
+
+@keyframes badge-appear {
+    0% {
+        transform: translate(-50%, -50%) scale(0) rotate(-5deg);
+        opacity: 0;
+    }
+
+    15% {
+        transform: translate(-50%, -50%) scale(1.1) rotate(2deg);
+        opacity: 1;
+    }
+
+    85% {
+        transform: translate(-50%, -50%) scale(1) rotate(0deg);
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(-50%, -50%) scale(0.8) rotate(0deg);
+        opacity: 0;
+    }
+}
+
+.badge-appear {
+    animation: badge-appear 2s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards;
+}
+
+/* ============================================
+   TROPHY MODAL - BAUHAUS GEOMETRIC
+   ============================================ */
+
+.trophy-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(26, 26, 26, 0.95);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    pointer-events: none;
+}
+
+.trophy-content {
+    background: var(--bauhaus-white);
+    border: 6px solid var(--bauhaus-black);
+    padding: 3rem;
+    text-align: center;
+    max-width: 500px;
+    box-shadow: 20px 20px 0 var(--bauhaus-yellow);
+    position: relative;
+}
+
+/* Geometric corner decorations */
+.trophy-content::before,
+.trophy-content::after {
+    content: '';
+    position: absolute;
+    width: 40px;
+    height: 40px;
+}
+
+.trophy-content::before {
+    top: -6px;
+    left: -6px;
+    background: var(--bauhaus-red);
+    border: 4px solid var(--bauhaus-black);
+    border-radius: 50%;
+}
+
+.trophy-content::after {
+    bottom: -6px;
+    right: -6px;
+    background: var(--bauhaus-blue);
+    border: 4px solid var(--bauhaus-black);
+}
+
+.trophy-content h2 {
+    margin: 1rem 0 0.5rem;
+    font-size: 3rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    color: var(--bauhaus-black);
+}
+
+.trophy-content p {
+    margin: 0.5rem 0 0;
+    font-size: 1.2rem;
+    color: var(--bauhaus-black);
+}
+
+.trophy-icon {
+    font-size: 6rem;
+    margin-bottom: 1rem;
+    display: inline-block;
+    animation: trophy-bounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes trophy-bounce {
+
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+    }
+
+    50% {
+        transform: translateY(-30px) scale(1.1);
+    }
+}
+
+@keyframes trophy-appear {
+    0% {
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    90% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
+.trophy-appear {
+    animation: trophy-appear 3s ease-out forwards;
+}
+
+/* ============================================
+   GEOMETRIC ACCENT ELEMENTS
+   ============================================ */
+
+/* Add geometric shapes to badge for extra Bauhaus flair */
+.streak-badge::before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: var(--bauhaus-red);
+    border: 2px solid var(--bauhaus-black);
+    border-radius: 50%;
+    top: -10px;
+    right: -10px;
+}
+
+.streak-badge::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 20px solid var(--bauhaus-blue);
+    border-top: 2px solid var(--bauhaus-black);
+    bottom: -10px;
+    left: -10px;
+}
+
+/* ============================================
+   ACCESSIBILITY
+   ============================================ */
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .sparkle-particle,
+    .firework-particle,
+    .confetti-particle {
+        display: none;
+    }
+}
+
+/* ============================================
+   PERFORMANCE OPTIMIZATIONS
+   ============================================ */
+
+/* Force GPU acceleration */
+.sparkle-particle,
+.firework-particle,
+.confetti-particle,
+.streak-badge,
+.trophy-modal {
+    will-change: transform, opacity;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}

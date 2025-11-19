@@ -3,12 +3,24 @@ import { DocumentLoader } from './DocumentLoader.js';
 import { QuizEngine } from './QuizEngine.js';
 import { UIManager } from './UIManager.js';
 
+// Import celebration system
+import { AnimationController } from './effects/AnimationController.js';
+import { ParticleSystem } from './effects/ParticleSystem.js';
+import { EffectsRenderer } from './effects/EffectsRenderer.js';
+import { CelebrationEngine } from './effects/CelebrationEngine.js';
+
 class App {
     constructor() {
         this.llm = new LLMService();
         this.loader = new DocumentLoader();
         this.engine = new QuizEngine();
         this.ui = new UIManager();
+
+        // Initialize celebration system
+        const animator = new AnimationController();
+        const particles = new ParticleSystem();
+        const effects = new EffectsRenderer(animator, particles);
+        this.celebrations = new CelebrationEngine(this.engine, effects);
 
         this.initListeners();
     }
@@ -76,7 +88,7 @@ class App {
 
     nextQuestion() {
         const q = this.engine.getCurrentQuestion();
-        this.ui.updateProgress(this.engine.getProgress());
+        this.ui.updateProgress(this.engine.getStats());
 
         this.ui.renderQuestion(q, (idx, btn) => {
             const isCorrect = this.engine.submitAnswer(idx);
@@ -86,7 +98,15 @@ class App {
                 if (this.engine.next()) {
                     this.nextQuestion();
                 } else {
-                    const final = this.engine.getProgress();
+                    const final = this.engine.getStats();
+
+                    // Check for perfect score and celebrate
+                    if (final.score === final.total) {
+                        setTimeout(() => {
+                            this.celebrations.celebratePerfectScore();
+                        }, 500);
+                    }
+
                     this.ui.showResult(final.score, final.total);
                 }
             }, 1000);
