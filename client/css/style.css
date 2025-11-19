@@ -1,0 +1,7 @@
+/* Main Entry Point */
+@import 'bauhaus.css';
+
+/* Additional utility classes can go here */
+.hidden {
+    display: none !important;
+}
