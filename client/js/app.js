@@ -9,6 +9,11 @@ import { ParticleSystem } from './effects/ParticleSystem.js';
 import { EffectsRenderer } from './effects/EffectsRenderer.js';
 import { CelebrationEngine } from './effects/CelebrationEngine.js';
 
+// Import audio system
+import { SoundGenerator } from './audio/SoundGenerator.js';
+import { AudioManager } from './audio/AudioManager.js';
+import { AudioSettings } from './audio/AudioSettings.js';
+
 class App {
     constructor() {
         this.llm = new LLMService();
@@ -16,13 +21,18 @@ class App {
         this.engine = new QuizEngine();
         this.ui = new UIManager();
 
-        // Initialize celebration system
+        // Initialize audio system
+        const soundGen = new SoundGenerator();
+        this.audioManager = new AudioManager(soundGen);
+
+        // Initialize celebration system with audio
         const animator = new AnimationController();
         const particles = new ParticleSystem();
         const effects = new EffectsRenderer(animator, particles);
-        this.celebrations = new CelebrationEngine(this.engine, effects);
+        this.celebrations = new CelebrationEngine(this.engine, effects, this.audioManager);
 
         this.initListeners();
+        this.initAudioUI();
     }
 
     initListeners() {
@@ -57,6 +67,28 @@ class App {
 
         // Restart
         document.getElementById('restart-btn').onclick = () => this.ui.showView('atelier');
+    }
+
+    initAudioUI() {
+        // Initialize audio settings UI
+        new AudioSettings(this.audioManager);
+
+        // Add UI sound effects after a short delay to ensure DOM is ready
+        setTimeout(() => this.addUISounds(), 100);
+    }
+
+    addUISounds() {
+        // Add click sounds to all buttons
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (!btn.disabled) {
+                    this.audioManager.play('click');
+                }
+            });
+        });
+
+        // Add hover sounds to option cards (will be added dynamically during quiz)
+        // This is handled in the renderQuestion method via event delegation
     }
 
     async handleFile(file) {

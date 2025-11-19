@@ -1,0 +1,96 @@
+/* Audio Settings Styling */
+.audio-settings-section {
+    border-top: 2px solid var(--color-black);
+    padding-top: 1rem;
+    margin-top: 1rem;
+}
+
+.audio-settings-title {
+    font-size: 1rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0 0 1rem 0;
+}
+
+.audio-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    margin-bottom: 1rem;
+    font-weight: bold;
+}
+
+.audio-toggle-label input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+    border: 2px solid var(--color-black);
+}
+
+.volume-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    font-weight: bold;
+}
+
+.volume-label input[type="range"] {
+    flex: 1;
+    cursor: pointer;
+    height: 8px;
+    background: var(--color-bg);
+    border: 2px solid var(--color-black);
+    outline: none;
+}
+
+.volume-label input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--color-blue);
+    border: 2px solid var(--color-black);
+    cursor: pointer;
+}
+
+.volume-label input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: var(--color-blue);
+    border: 2px solid var(--color-black);
+    cursor: pointer;
+}
+
+.volume-label input[type="range"]:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#volume-value {
+    min-width: 45px;
+    text-align: right;
+    font-weight: bold;
+}
+
+.test-sound-btn {
+    width: 100%;
+    margin-top: 0.5rem;
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+}
+
+.test-sound-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.audio-warning {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: var(--color-yellow);
+    border: 2px solid var(--color-black);
+    font-size: 0.85rem;
+    font-weight: bold;
+}

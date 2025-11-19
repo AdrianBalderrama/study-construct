@@ -5,13 +5,15 @@
  * - Listen to quiz events (correct/incorrect answers)
  * - Determine appropriate celebration level based on streak
  * - Trigger effects via EffectsRenderer
+ * - Trigger audio via AudioManager
  * - Coordinate perfect score celebrations
  */
 
 export class CelebrationEngine {
-    constructor(quizEngine, effectsRenderer) {
+    constructor(quizEngine, effectsRenderer, audioManager) {
         this.quiz = quizEngine;
         this.effects = effectsRenderer;
+        this.audio = audioManager;
         this.setupListeners();
     }
 
@@ -35,22 +37,34 @@ export class CelebrationEngine {
      * @private
      */
     handleCorrectAnswer({ streak, score }) {
-        // Base celebration: pulse animation
+        // Base celebration: pulse animation + sound
         this.effects.pulse();
 
         // Escalating celebrations based on streak
-        if (streak === 3) {
+        if (streak === 1) {
+            // Single correct answer
+            this.audio.playCorrectWithStreak(streak);
+        } else if (streak === 3) {
+            // 3-streak celebration
             this.effects.sparkle();
             this.effects.showBadge('On Fire! 🔥');
+            this.audio.play('streak3');
         } else if (streak === 5) {
+            // 5-streak celebration
             this.effects.fireworks();
             this.effects.showBadge('Unstoppable! ⚡');
+            this.audio.play('streak5');
         } else if (streak > 5) {
             // Intensify for longer streaks
             this.effects.intensifyFireworks();
+            this.audio.playCorrectWithStreak(streak);
+
             if (streak % 3 === 0) {
                 this.effects.showBadge(`${streak} Streak! 🌟`);
             }
+        } else {
+            // 2 or 4 streak (no special celebration, just progressive sound)
+            this.audio.playCorrectWithStreak(streak);
         }
     }
 
@@ -60,6 +74,7 @@ export class CelebrationEngine {
      */
     handleIncorrectAnswer() {
         this.effects.shake();
+        this.audio.play('incorrect');
     }
 
     /**
@@ -69,6 +84,7 @@ export class CelebrationEngine {
     celebratePerfectScore() {
         this.effects.confetti();
         this.effects.showTrophy();
+        this.audio.play('victory');
     }
 
     /**
