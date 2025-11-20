@@ -3,11 +3,14 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const { Team } = require('./agent');
 const { MultimodalProcessor } = require('./multimodal/MultimodalProcessor');
+const path = require('path');
+
+// Load environment variables from .env.local (or .env as fallback)
+require('dotenv').config({ path: path.join(__dirname, '../.env.local') });
+require('dotenv').config(); // Fallback to .env if .env.local doesn't exist
 
 const app = express();
-const PORT = 3001;
-
-const path = require('path');
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(bodyParser.json({ limit: '100mb' })); // Increased for multimodal content
@@ -38,10 +41,16 @@ app.post('/api/quiz', async (req, res) => {
                 extractedText = content.text;
                 console.log("Received text content. Length:", extractedText.length);
             } else if (content.type === 'multimodal') {
-                // Process multimodal content with Gemini
+                // Process multimodal content with Gemini (Vertex AI)
                 console.log(`Processing ${content.metadata.format} file:`, content.metadata.filename);
 
-                const processor = new MultimodalProcessor(token);
+                // Use Vertex AI with Project ID and Location
+                // Project ID retrieved from gcloud config: azsb-it-genai
+                const project = process.env.GOOGLE_CLOUD_PROJECT || 'azsb-it-genai';
+                const location = process.env.GOOGLE_CLOUD_LOCATION || 'us-central1';
+
+                const processor = new MultimodalProcessor(project, location, token);
+
                 extractedText = await processor.extractContent(
                     content.base64,
                     content.mimeType,

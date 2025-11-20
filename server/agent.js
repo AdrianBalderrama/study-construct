@@ -1,4 +1,4 @@
-const { LlmAgent, Gemini, FunctionTool, SequentialAgent, InMemoryRunner, stringifyContent } = require('@google/adk');
+const { LlmAgent, Gemini, FunctionTool, SequentialAgent, InMemoryRunner } = require('@google/adk');
 const { z } = require('zod');
 
 class Team {
@@ -25,7 +25,7 @@ class Team {
             description: 'Search the document for keywords to find relevant facts.',
             parameters: z.object({ query: z.string().describe('The keyword to search for') }),
             execute: async ({ query }) => {
-                onLog('Tool', 'EXECUTE', `Searching for: ${query}`);
+                onLog('Tool', 'EXECUTE', `Searching for: ${query} `);
                 const lines = this.documentText.split('\n');
                 const matches = lines.filter(l => l.toLowerCase().includes(query.toLowerCase()));
                 const result = matches.slice(0, 5).join('\n') || "No matches found.";
@@ -39,7 +39,7 @@ class Team {
         // Researcher: Finds facts
         let focus = "general concepts";
         if (this.weaknesses.length > 0) {
-            focus = `concepts related to: ${this.weaknesses.join(', ')}`;
+            focus = `concepts related to: ${this.weaknesses.join(', ')} `;
         }
 
         const researcher = new LlmAgent({
@@ -48,18 +48,18 @@ class Team {
             instruction: `
                 You are a diligent Researcher.
                 Your goal is to extract 5 key facts from the following document about: ${focus}.
-                
-                DOCUMENT:
+
+DOCUMENT:
                 ${this.documentText}
                 
                 Output ONLY a numbered list of 5 facts, nothing else.
-                Example:
-                1. Fact one
-                2. Fact two
-                3. Fact three
-                4. Fact four
-                5. Fact five
-            `
+Example:
+1. Fact one
+2. Fact two
+3. Fact three
+4. Fact four
+5. Fact five
+    `
         });
 
         // Examiner: Creates quiz with diverse question types
@@ -70,31 +70,31 @@ class Team {
                 You are an Examiner creating quiz questions.
                 You will receive facts about a topic.
                 Create exactly 5 questions with variety:
-                - 3 multiple-choice questions
-                - 1 true/false question  
-                - 1 fill-in-the-blank question
+- 3 multiple - choice questions
+    - 1 true / false question
+        - 1 fill -in -the - blank question
                 
-                Output valid JSON array (no markdown):
-                [
-                    {
-                        "type": "multiple-choice",
-                        "question": "Question text?",
-                        "options": ["A", "B", "C", "D"],
-                        "correctIndex": 0
-                    },
-                    {
-                        "type": "true-false",
-                        "question": "Statement to verify.",
-                        "correctAnswer": true
-                    },
-                    {
-                        "type": "fill-blank",
-                        "question": "Text with _____ blank.",
-                        "correctAnswer": "answer",
-                        "acceptableAnswers": ["answer", "Answer"],
-                        "caseSensitive": false
-                    }
-                ]
+                Output valid JSON array(no markdown):
+[
+    {
+        "type": "multiple-choice",
+        "question": "Question text?",
+        "options": ["A", "B", "C", "D"],
+        "correctIndex": 0
+    },
+    {
+        "type": "true-false",
+        "question": "Statement to verify.",
+        "correctAnswer": true
+    },
+    {
+        "type": "fill-blank",
+        "question": "Text with _____ blank.",
+        "correctAnswer": "answer",
+        "acceptableAnswers": ["answer", "Answer"],
+        "caseSensitive": false
+    }
+]
             `
         });
 
@@ -104,83 +104,76 @@ class Team {
             subAgents: [researcher, examiner]
         });
 
-        // 5. Run
-        const appName = 'study-construct';
+        // 5. Create runner and run the team
+        const sessionId = `session - ${Date.now()} `;
         const runner = new InMemoryRunner({
             agent: team,
-            appName: appName
+            appName: 'study-construct'
         });
 
-        onLog('Team', 'START', 'Starting ADK workflow...');
-
-        let finalResponse = "";
-
-        const sessionId = 'session-' + Date.now();
-        const userId = 'user-1';
-
-        // Explicitly create the session first
+        // Create the session first
         await runner.sessionService.createSession({
-            appName: appName,
-            userId: userId,
+            appName: 'study-construct',
+            userId: 'user-1',
             sessionId: sessionId
         });
 
-        // Execute and stream events
+        let finalResponse = '';
+
+        // Create Content object for the initial message
+        const initialMessage = {
+            role: 'user',
+            parts: [{ text: 'Start the research and exam process.' }]
+        };
+
         const eventStream = runner.runAsync({
-            userId: userId,
+            userId: 'user-1',
             sessionId: sessionId,
-            newMessage: { role: 'user', parts: [{ text: `Start the research and exam process.` }] }
+            newMessage: initialMessage
         });
 
         for await (const event of eventStream) {
-            // Check if this is an agent response (has content with model role)
-            if (event.content && event.content.role === 'model' && event.author) {
-                const content = stringifyContent(event);
-                console.log(`[${event.author}] Response: "${content.substring(0, 100)}..."`);
+            onLog(event.author || 'System', 'INFO', JSON.stringify(event));
 
-                onLog(event.author, 'RESPONSE', `Completed`);
+            // Capture Examiner's final response
+            if (event.content?.role === 'model' && event.author === 'Examiner') {
+                const text = event.content.parts
+                    .filter(p => p.text)
+                    .map(p => p.text)
+                    .join('');
 
-                // Capture response from Examiner (the final agent)
-                if (event.author === 'Examiner' && content && content.trim().length > 0) {
-                    finalResponse = content;
-                    console.log(`Captured final response from Examiner`);
+                if (text) {
+                    finalResponse += text;
                 }
-            }
-
-            // Check for errors
-            if (event.errorCode) {
-                console.log(`[${event.author}] ERROR ${event.errorCode}: ${event.errorMessage}`);
-                onLog(event.author || 'System', 'ERROR', event.errorMessage || 'Unknown error');
             }
         }
 
-        // Parse JSON from final response
+        // 6. Parse JSON
+        let cleanedResponse = finalResponse.trim();
+
+        // Remove markdown code fences if present
+        cleanedResponse = cleanedResponse.replace(/```json\s */g, '');
+        cleanedResponse = cleanedResponse.replace(/```\s*/g, '');
+        cleanedResponse = cleanedResponse.trim();
+
+        // Try to find JSON array
+        const jsonMatch = cleanedResponse.match(/\[[\s\S]*\]/);
+        if (jsonMatch) {
+            cleanedResponse = jsonMatch[0];
+        }
+
+        console.log('Final Raw Response:', finalResponse.substring(0, 200));
+
         try {
-            console.log("Final Raw Response:", finalResponse); // Log for debugging
-
-            // Clean potential markdown and whitespace
-            let cleanText = finalResponse.replace(/```json/g, '').replace(/```/g, '').trim();
-
-            // Find the array start and end
-            const startIndex = cleanText.indexOf('[');
-            const endIndex = cleanText.lastIndexOf(']');
-
-            if (startIndex !== -1 && endIndex !== -1) {
-                cleanText = cleanText.substring(startIndex, endIndex + 1);
-            }
-
-            const jsonMatch = cleanText.match(/\[\s*\{[\s\S]*\}\s*\]/);
-
-            if (!jsonMatch) {
-                throw new Error(`Failed to parse JSON. Raw output start: ${finalResponse.substring(0, 100)}...`);
-            }
-
-            return JSON.parse(jsonMatch[0]);
-        } catch (e) {
-            onLog('Team', 'ERROR', `JSON parsing failed: ${e.message}`);
-            throw e;
+            const quiz = JSON.parse(cleanedResponse);
+            return quiz;
+        } catch (error) {
+            console.error('[Team] JSON parsing failed:', error);
+            console.error('Raw output start:', finalResponse.substring(0, 200));
+            throw new Error('Failed to parse JSON. Raw output start: ...');
         }
     }
 }
+
 
 module.exports = { Team };

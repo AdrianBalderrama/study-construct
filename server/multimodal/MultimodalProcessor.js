@@ -1,20 +1,30 @@
 /**
- * MultimodalProcessor - Process multimodal content with Gemini API
+ * MultimodalProcessor - Process multimodal content with Vertex AI
  * 
  * Responsibilities:
- * - Extract content from images using Gemini Vision
- * - Transcribe audio using Gemini Audio
- * - Extract content from video using Gemini Video
+ * - Extract content from images using Gemini Vision (Vertex AI)
+ * - Transcribe audio using Gemini Audio (Vertex AI)
+ * - Extract content from video using Gemini Video (Vertex AI)
  * - Provide format-specific prompts
  */
 
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { VertexAI } = require('@google-cloud/vertexai');
 
 class MultimodalProcessor {
-    constructor(apiKey) {
-        this.genAI = new GoogleGenerativeAI(apiKey);
-        this.model = this.genAI.getGenerativeModel({
-            model: 'gemini-1.5-flash'
+    constructor(project, location, token) {
+        // Initialize Vertex AI with project and location
+        // Note: token is handled automatically by the SDK if using ADC, 
+        // or can be passed if needed (though VertexAI SDK usually uses GoogleAuth)
+        // If running locally with gcloud auth, we don't strictly need to pass the token 
+        // if the environment is set up correctly, but we'll initialize with project/location.
+
+        this.vertexAI = new VertexAI({
+            project: project,
+            location: location
+        });
+
+        this.model = this.vertexAI.getGenerativeModel({
+            model: 'gemini-2.5-flash'
         });
     }
 
@@ -26,21 +36,29 @@ class MultimodalProcessor {
      * @returns {Promise<string>} Extracted text content
      */
     async extractContent(base64, mimeType, format) {
-        const prompt = this.getPromptForFormat(format);
+        const promptText = this.getPromptForFormat(format);
 
         try {
-            const result = await this.model.generateContent([
-                {
-                    inlineData: {
-                        data: base64,
-                        mimeType: mimeType
-                    }
-                },
-                prompt
-            ]);
+            const request = {
+                contents: [{
+                    role: 'user',
+                    parts: [
+                        {
+                            inlineData: {
+                                data: base64,
+                                mimeType: mimeType
+                            }
+                        },
+                        { text: promptText }
+                    ]
+                }]
+            };
 
+            const result = await this.model.generateContent(request);
             const response = await result.response;
-            const text = response.text();
+
+            // Vertex AI response structure might differ slightly
+            const text = response.candidates[0].content.parts[0].text;
 
             console.log(`[MultimodalProcessor] Extracted ${text.length} characters from ${format}`);
             return text;
@@ -87,14 +105,6 @@ class MultimodalProcessor {
         };
 
         return prompts[format] || 'Extract and describe all content from this file in detail.';
-    }
-
-    /**
-     * Check if API key is valid
-     * @returns {boolean}
-     */
-    isConfigured() {
-        return !!this.genAI;
     }
 }
 
