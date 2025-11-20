@@ -40,7 +40,7 @@ export class LLMService {
         return data.candidates[0].content.parts[0].text;
     }
 
-    async generateQuiz(textContext, weaknesses = []) {
+    async generateQuiz(parsedContent, weaknesses = []) {
         if (!this.token) throw new Error("Missing Access Token");
 
         const response = await fetch('http://localhost:3001/api/quiz', {
@@ -51,7 +51,7 @@ export class LLMService {
             body: JSON.stringify({
                 token: this.token,
                 modelId: this.modelId,
-                documentText: textContext,
+                content: parsedContent,  // Send full parsed content object
                 weaknesses: weaknesses
             })
         });

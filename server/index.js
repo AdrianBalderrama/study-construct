@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const { Team } = require('./agent');
+const { MultimodalProcessor } = require('./multimodal/MultimodalProcessor');
 
 const app = express();
 const PORT = 3001;
@@ -9,28 +10,55 @@ const PORT = 3001;
 const path = require('path');
 
 app.use(cors());
-app.use(bodyParser.json({ limit: '10mb' }));
+app.use(bodyParser.json({ limit: '100mb' })); // Increased for multimodal content
 
 // Serve static files from client
 app.use(express.static(path.join(__dirname, '../client')));
 
 app.post('/api/quiz', async (req, res) => {
     try {
-        const { token, modelId, documentText, weaknesses } = req.body;
+        const { token, modelId, content, documentText, weaknesses } = req.body;
 
         if (!token) {
             return res.status(401).json({ error: "Missing Google Cloud Access Token" });
         }
 
-        console.log("Received quiz request. Document length:", documentText.length);
+        let extractedText;
 
-        // Initialize the ADK Team
-        const team = new Team(token, modelId, documentText, weaknesses);
+        // Backward compatibility: support old documentText parameter
+        if (documentText) {
+            extractedText = documentText;
+            console.log("Received text content (legacy). Length:", extractedText.length);
+        }
+        // New multimodal content parameter
+        else if (content) {
+            // Handle different content types
+            if (content.type === 'text') {
+                // Direct text content
+                extractedText = content.text;
+                console.log("Received text content. Length:", extractedText.length);
+            } else if (content.type === 'multimodal') {
+                // Process multimodal content with Gemini
+                console.log(`Processing ${content.metadata.format} file:`, content.metadata.filename);
 
-        // Generate Quiz
+                const processor = new MultimodalProcessor(token);
+                extractedText = await processor.extractContent(
+                    content.base64,
+                    content.mimeType,
+                    content.metadata.format
+                );
+
+                console.log(`Extracted ${extractedText.length} characters from ${content.metadata.format}`);
+            } else {
+                return res.status(400).json({ error: "Invalid content type" });
+            }
+        } else {
+            return res.status(400).json({ error: "Missing content or documentText parameter" });
+        }
+
+        // Generate Quiz with extracted text
+        const team = new Team(token, modelId, extractedText, weaknesses);
         const quiz = await team.generateQuiz((agent, type, msg) => {
-            // In a real app, we'd use WebSockets to stream logs.
-            // For this prototype, we'll just log to server console.
             console.log(`[${agent}] ${type}: ${msg}`);
         });
 

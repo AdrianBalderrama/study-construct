@@ -1,5 +1,5 @@
 import { LLMService } from './LLMService.js';
-import { DocumentLoader } from './DocumentLoader.js';
+import { DocumentLoader } from './loaders/DocumentLoader.js';
 import { QuizEngine } from './QuizEngine.js';
 import { UIManager } from './UIManager.js';
 
@@ -97,17 +97,28 @@ class App {
         try {
             this.ui.showView('workshop');
             this.ui.clearLog();
+            this.ui.addLog('System', 'INFO', `Loading file: ${file.name}`);
 
-            const text = await this.loader.loadFile(file);
+            // Parse file with new DocumentLoader
+            const parsedContent = await this.loader.loadFile(file);
 
-            // Call the Backend API via LLMService
-            // The backend now handles the Team/Agent orchestration
+            // Show format-specific feedback
+            if (parsedContent.type === 'multimodal') {
+                this.ui.addLog('System', 'INFO',
+                    `Processing ${parsedContent.metadata.format} file with Gemini AI...`);
+            } else {
+                this.ui.addLog('System', 'INFO',
+                    `Extracted ${parsedContent.text.length} characters from ${parsedContent.metadata.format} file`);
+            }
+
+            // Generate quiz with parsed content
             const weaknesses = JSON.parse(localStorage.getItem('sc_weaknesses') || '[]');
-            const quizData = await this.llm.generateQuiz(text, weaknesses);
+            const quizData = await this.llm.generateQuiz(parsedContent, weaknesses);
 
             this.engine.load(quizData);
             this.startQuiz();
         } catch (error) {
+            console.error('Error:', error);
             alert(`Error: ${error.message}`);
             this.ui.showView('atelier');
         }

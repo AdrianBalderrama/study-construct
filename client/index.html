@@ -10,6 +10,9 @@
     <link rel="stylesheet" href="css/effects.css">
     <link rel="stylesheet" href="css/audio.css">
     <link rel="stylesheet" href="css/questions.css">
+
+    <!-- PDF.js library for PDF parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
 </head>
 
 <body>
@@ -35,12 +38,14 @@
             <section id="view-atelier" class="view-section active">
                 <div class="hero-block">
                     <h2>INPUT<br>DATA</h2>
-                    <p>Upload text or markdown to generate a construct.</p>
+                    <p>Upload text, PDF, images, audio, or video to generate a construct.</p>
                 </div>
                 <div class="upload-zone" id="drop-zone">
                     <div class="upload-icon"></div>
                     <p>DROP FILE HERE</p>
-                    <input type="file" id="file-input" accept=".txt,.md,.json" hidden>
+                    <input type="file" id="file-input"
+                        accept=".txt,.md,.markdown,.csv,.json,.pdf,.jpg,.jpeg,.png,.gif,.webp,.bmp,.svg,.mp3,.wav,.m4a,.ogg,.oga,.flac,.mp4,.webm,.mov,.avi,.mpeg,.mpg"
+                        hidden>
                     <button id="upload-btn" class="shape-btn rect-btn">SELECT FILE</button>
                 </div>
             </section>
