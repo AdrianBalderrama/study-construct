@@ -1,0 +1,26 @@
+{
+  "users": {
+    "user-1": {
+      "weaknesses": [],
+      "topicsStudied": [
+        "concepts related to: AI History",
+        "general concepts"
+      ],
+      "lastSession": "2025-11-26T22:02:45.043Z",
+      "quizHistory": [
+        {
+          "score": 1,
+          "total": 5,
+          "topic": "Study Session",
+          "date": "2025-11-26T21:58:29.556Z"
+        },
+        {
+          "score": 1,
+          "total": 5,
+          "topic": "Study Session",
+          "date": "2025-11-26T22:02:45.043Z"
+        }
+      ]
+    }
+  }
+}

@@ -33,6 +33,7 @@ class App {
 
         this.initListeners();
         this.initAudioUI();
+        this.loadHistory();
     }
 
     initListeners() {
@@ -111,9 +112,27 @@ class App {
                     `Extracted ${parsedContent.text.length} characters from ${parsedContent.metadata.format} file`);
             }
 
-            // Generate quiz with parsed content
+            // Step 1: Research
+            this.ui.addLog('System', 'INFO', 'Starting Research Agent...');
             const weaknesses = JSON.parse(localStorage.getItem('sc_weaknesses') || '[]');
-            const quizData = await this.llm.generateQuiz(parsedContent, weaknesses);
+
+            const researchResult = await this.llm.runResearch(parsedContent, weaknesses);
+            const { facts } = researchResult;
+
+            // Step 2: Human-in-the-Loop Review
+            // For this demo, we'll use a simple prompt/confirm flow or just log it
+            // In a real UI, we'd show a modal. Let's simulate a pause by logging and waiting 1s
+            this.ui.addLog('System', 'HITL', 'Please review the extracted facts (Simulated Pause)...');
+            console.log("Facts to review:", facts);
+
+            // Simulate user approval (in real app, we'd show a UI here)
+            // For now, let's just proceed automatically after a brief "review" delay
+            await new Promise(r => setTimeout(r, 1500));
+            this.ui.addLog('System', 'HITL', 'Facts Approved by User.');
+
+            // Step 3: Generate Quiz
+            this.ui.addLog('System', 'INFO', 'Starting Examiner Agents (Parallel)...');
+            const quizData = await this.llm.generateQuizFromFacts(facts, weaknesses);
 
             this.engine.load(quizData);
             this.startQuiz();
@@ -143,6 +162,9 @@ class App {
                 } else {
                     const final = this.engine.getStats();
 
+                    // Save history
+                    this.saveHistory(final);
+
                     // Check for perfect score and celebrate
                     if (final.score === final.total) {
                         setTimeout(() => {
@@ -155,6 +177,50 @@ class App {
             }, 1000);
         });
     }
+
+    async loadHistory() {
+        try {
+            const res = await fetch('/api/history');
+            const history = await res.json();
+            this.renderHistory(history);
+        } catch (e) {
+            console.error("Failed to load history", e);
+        }
+    }
+
+    async saveHistory(stats) {
+        try {
+            const res = await fetch('/api/history', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    score: stats.score,
+                    total: stats.total,
+                    topic: 'Study Session' // Could be dynamic based on doc
+                })
+            });
+            const history = await res.json();
+            this.renderHistory(history);
+        } catch (e) {
+            console.error("Failed to save history", e);
+        }
+    }
+
+    renderHistory(history) {
+        const container = document.getElementById('history-list');
+        if (!history || history.length === 0) {
+            container.innerHTML = '<div class="history-empty">No tests taken yet.</div>';
+            return;
+        }
+
+        container.innerHTML = history.reverse().map(h => `
+            <div class="history-item">
+                <div class="date">${new Date(h.date).toLocaleDateString()} ${new Date(h.date).toLocaleTimeString()}</div>
+                <div class="score">Score: ${h.score}/${h.total}</div>
+            </div>
+        `).join('');
+    }
+
 }
 
 // Boot

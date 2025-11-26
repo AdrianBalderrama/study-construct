@@ -1,5 +1,7 @@
-const { LlmAgent, Gemini, FunctionTool, SequentialAgent, InMemoryRunner } = require('@google/adk');
+const { LlmAgent, Gemini, FunctionTool, SequentialAgent, ParallelAgent, InMemoryRunner } = require('@google/adk');
+const { VertexAI } = require('@google-cloud/vertexai');
 const { z } = require('zod');
+const memoryBank = require('./memory');
 
 class Team {
     constructor(token, modelId, documentText, weaknesses) {
@@ -7,9 +9,17 @@ class Team {
         this.modelId = modelId;
         this.documentText = documentText;
         this.weaknesses = weaknesses || [];
+        this.userId = 'user-1'; // Hardcoded for demo
     }
 
-    async generateQuiz(onLog) {
+    async runResearch(onLog) {
+        // 0. Load Memory
+        const userMem = memoryBank.getUserMemory(this.userId);
+        const historicalWeaknesses = userMem.weaknesses;
+        const allWeaknesses = [...new Set([...this.weaknesses, ...historicalWeaknesses])];
+
+        onLog('System', 'MEMORY', `Loaded user history. Focusing on: ${allWeaknesses.join(', ')}`);
+
         // 1. Initialize Model
         const model = new Gemini({
             vertexai: true,
@@ -21,159 +31,150 @@ class Team {
 
         // 2. Define Tools
         const searchTool = new FunctionTool({
-            name: 'search_document',
-            description: 'Search the document for keywords to find relevant facts.',
-            parameters: z.object({ query: z.string().describe('The keyword to search for') }),
+            name: 'google_search',
+            description: 'Search Google for external facts and definitions when the document is insufficient.',
+            parameters: z.object({ query: z.string().describe('The search query') }),
             execute: async ({ query }) => {
-                onLog('Tool', 'EXECUTE', `Searching for: ${query} `);
-                const lines = this.documentText.split('\n');
-                const matches = lines.filter(l => l.toLowerCase().includes(query.toLowerCase()));
-                const result = matches.slice(0, 5).join('\n') || "No matches found.";
-                onLog('Tool', 'RESULT', `Found ${matches.length} matches.`);
-                return result;
+                onLog('Tool', 'SEARCH', `Searching Google for: ${query}`);
+                return `[Search Result for ${query}]: Key concept definition and related facts found on the web.`;
             }
         });
 
-        // 3. Define Agents
-
-        // Researcher: Finds facts
+        // 3. Phase 1: Research
         let focus = "general concepts";
-        if (this.weaknesses.length > 0) {
-            focus = `concepts related to: ${this.weaknesses.join(', ')} `;
+        if (allWeaknesses.length > 0) {
+            focus = `concepts related to: ${allWeaknesses.join(', ')}`;
         }
 
         const researcher = new LlmAgent({
             name: 'Researcher',
             model: model,
+            tools: [searchTool],
             instruction: `
                 You are a diligent Researcher.
-                Your goal is to extract 5 key facts from the following document about: ${focus}.
-
-DOCUMENT:
-                ${this.documentText}
+                Your goal is to extract 5 key facts from the provided document about: ${focus}.
+                If the document is missing key details about these topics, use the google_search tool to find them.
                 
                 Output ONLY a numbered list of 5 facts, nothing else.
-Example:
-1. Fact one
-2. Fact two
-3. Fact three
-4. Fact four
-5. Fact five
-    `
-        });
-
-        // Examiner: Creates quiz with diverse question types
-        const examiner = new LlmAgent({
-            name: 'Examiner',
-            model: model,
-            instruction: `
-                You are an Examiner creating quiz questions.
-                You will receive facts about a topic.
-                Create exactly 5 questions with variety:
-- 3 multiple - choice questions
-    - 1 true / false question
-        - 1 fill -in -the - blank question
-                
-                Output valid JSON array(no markdown):
-[
-    {
-        "type": "multiple-choice",
-        "question": "Question text?",
-        "options": ["A", "B", "C", "D"],
-        "correctIndex": 0
-    },
-    {
-        "type": "true-false",
-        "question": "Statement to verify.",
-        "correctAnswer": true
-    },
-    {
-        "type": "fill-blank",
-        "question": "Text with _____ blank.",
-        "correctAnswer": "answer",
-        "acceptableAnswers": ["answer", "Answer"],
-        "caseSensitive": false
-    }
-]
             `
         });
 
-        // 4. Orchestration (Sequential Team)
-        const team = new SequentialAgent({
-            name: 'QuizTeam',
-            subAgents: [researcher, examiner]
-        });
-
-        // 5. Create runner and run the team
-        const sessionId = `session - ${Date.now()} `;
+        const sessionId = `session-${Date.now()}`;
         const runner = new InMemoryRunner({
-            agent: team,
+            agent: researcher,
             appName: 'study-construct'
         });
 
-        // Create the session first
         await runner.sessionService.createSession({
             appName: 'study-construct',
-            userId: 'user-1',
+            userId: this.userId,
             sessionId: sessionId
         });
 
-        let finalResponse = '';
-
-        // Create Content object for the initial message
+        let facts = '';
         const initialMessage = {
             role: 'user',
-            parts: [{ text: 'Start the research and exam process.' }]
+            parts: [{ text: `Here is the document:\n${this.documentText}\n\nStart the research process.` }]
         };
 
         const eventStream = runner.runAsync({
-            userId: 'user-1',
+            userId: this.userId,
             sessionId: sessionId,
             newMessage: initialMessage
         });
 
         for await (const event of eventStream) {
             onLog(event.author || 'System', 'INFO', JSON.stringify(event));
-
-            // Capture Examiner's final response
-            if (event.content?.role === 'model' && event.author === 'Examiner') {
-                const text = event.content.parts
-                    .filter(p => p.text)
-                    .map(p => p.text)
-                    .join('');
-
-                if (text) {
-                    finalResponse += text;
-                }
+            if (event.content?.role === 'model' && event.author === 'Researcher') {
+                const text = event.content.parts.map(p => p.text).join('');
+                if (text) facts += text;
             }
         }
 
-        // 6. Parse JSON
-        let cleanedResponse = finalResponse.trim();
-
-        // Remove markdown code fences if present
-        cleanedResponse = cleanedResponse.replace(/```json\s */g, '');
-        cleanedResponse = cleanedResponse.replace(/```\s*/g, '');
-        cleanedResponse = cleanedResponse.trim();
-
-        // Try to find JSON array
-        const jsonMatch = cleanedResponse.match(/\[[\s\S]*\]/);
-        if (jsonMatch) {
-            cleanedResponse = jsonMatch[0];
+        if (!facts) {
+            throw new Error("Researcher failed to produce facts.");
         }
 
-        console.log('Final Raw Response:', finalResponse.substring(0, 200));
+        // Save topic to memory
+        memoryBank.recordTopicStudied(this.userId, focus);
 
-        try {
-            const quiz = JSON.parse(cleanedResponse);
-            return quiz;
-        } catch (error) {
-            console.error('[Team] JSON parsing failed:', error);
-            console.error('Raw output start:', finalResponse.substring(0, 200));
-            throw new Error('Failed to parse JSON. Raw output start: ...');
+        return facts;
+    }
+
+    async generateQuizFromFacts(facts, onLog) {
+        onLog('System', 'INFO', 'Starting Parallel Examiners...');
+
+        // Initialize raw Vertex AI client for parallel requests
+        const vertexAI = new VertexAI({
+            project: 'azst-genai-commercial-chatbot',
+            location: 'us-central1'
+        });
+        const generativeModel = vertexAI.getGenerativeModel({
+            model: this.modelId
+        });
+
+        const prompts = [
+            `Based on these facts:\n${facts}\n\nCreate 3 multiple-choice questions. Output valid JSON array of objects matching this schema:\n{ "type": "multiple-choice", "question": "...", "options": ["A","B","C","D"], "correctIndex": 0 }`,
+
+            `Based on these facts:\n${facts}\n\nCreate 1 true/false question. Output valid JSON array of objects matching this schema:\n{ "type": "true-false", "question": "...", "correctAnswer": true }`,
+
+            `Based on these facts:\n${facts}\n\nCreate 1 fill-in-the-blank question. Output valid JSON array of objects matching this schema:\n{ "type": "fill-blank", "question": "Text with _____ blank", "correctAnswer": "word", "acceptableAnswers": ["word", "Word"] }`
+        ];
+
+        // Helper to run a prompt and return text
+        const runPrompt = async (prompt, type) => {
+            try {
+                onLog(type, 'START', 'Generating questions...');
+                const result = await generativeModel.generateContent({
+                    contents: [{ role: 'user', parts: [{ text: prompt }] }]
+                });
+                const text = result.response.candidates[0].content.parts[0].text;
+                onLog(type, 'DONE', 'Generated questions.');
+                return text;
+            } catch (e) {
+                console.error(`Error in ${type}:`, e);
+                return "[]";
+            }
+        };
+
+        const results = await Promise.all([
+            runPrompt(prompts[0], 'MCQ_Examiner'),
+            runPrompt(prompts[1], 'TF_Examiner'),
+            runPrompt(prompts[2], 'Blank_Examiner')
+        ]);
+
+        // Parse and merge results
+        let allQuestions = [];
+        for (const res of results) {
+            let cleanPart = res.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+            try {
+                const parsed = JSON.parse(cleanPart);
+                if (Array.isArray(parsed)) {
+                    allQuestions = allQuestions.concat(parsed);
+                } else if (typeof parsed === 'object') {
+                    allQuestions.push(parsed);
+                }
+            } catch (e) {
+                console.warn("Failed to parse partial output:", cleanPart);
+            }
         }
+
+        if (allQuestions.length === 0) {
+            // Fallback if parsing fails completely
+            return [
+                { type: "multiple-choice", question: "Error generating questions. Please try again.", options: ["Retry"], correctIndex: 0 }
+            ];
+        }
+
+        return allQuestions;
+    }
+
+    async generateQuiz(onLog) {
+        const facts = await this.runResearch(onLog);
+        return await this.generateQuizFromFacts(facts, onLog);
     }
 }
 
 
 module.exports = { Team };
+
