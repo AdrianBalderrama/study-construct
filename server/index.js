@@ -27,8 +27,12 @@ app.post('/api/research', async (req, res) => {
 
         let extractedText = documentText;
         if (content && content.type === 'multimodal') {
-            const project = process.env.GOOGLE_CLOUD_PROJECT || 'azsb-it-genai';
-            const location = process.env.GOOGLE_CLOUD_LOCATION || 'us-central1';
+            const project = process.env.GOOGLE_CLOUD_PROJECT;
+            const location = process.env.GOOGLE_CLOUD_LOCATION;
+
+            if (!project || !location) {
+                throw new Error("Missing GOOGLE_CLOUD_PROJECT or GOOGLE_CLOUD_LOCATION in environment variables");
+            }
             const processor = new MultimodalProcessor(project, location, token);
             extractedText = await processor.extractContent(content.base64, content.mimeType, content.metadata.format);
         } else if (content && content.type === 'text') {

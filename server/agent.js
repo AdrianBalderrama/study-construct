@@ -23,8 +23,8 @@ class Team {
         // 1. Initialize Model
         const model = new Gemini({
             vertexai: true,
-            project: 'azst-genai-commercial-chatbot',
-            location: 'us-central1',
+            project: process.env.GOOGLE_CLOUD_PROJECT,
+            location: process.env.GOOGLE_CLOUD_LOCATION,
             apiKey: this.token,
             model: this.modelId
         });
@@ -106,8 +106,8 @@ class Team {
 
         // Initialize raw Vertex AI client for parallel requests
         const vertexAI = new VertexAI({
-            project: 'azst-genai-commercial-chatbot',
-            location: 'us-central1'
+            project: process.env.GOOGLE_CLOUD_PROJECT,
+            location: process.env.GOOGLE_CLOUD_LOCATION
         });
         const generativeModel = vertexAI.getGenerativeModel({
             model: this.modelId
