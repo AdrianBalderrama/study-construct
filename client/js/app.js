@@ -13,6 +13,7 @@ import { CelebrationEngine } from './effects/CelebrationEngine.js';
 import { SoundGenerator } from './audio/SoundGenerator.js';
 import { AudioManager } from './audio/AudioManager.js';
 import { AudioSettings } from './audio/AudioSettings.js';
+import { PRELOADED_QUIZZES } from './preloaded_data.js';
 
 class App {
     constructor() {
@@ -34,6 +35,7 @@ class App {
         this.initListeners();
         this.initAudioUI();
         this.loadHistory();
+        this.initPreloaded();
     }
 
     initListeners() {
@@ -219,6 +221,40 @@ class App {
                 <div class="score">Score: ${h.score}/${h.total}</div>
             </div>
         `).join('');
+    }
+
+    initPreloaded() {
+        const container = document.getElementById('preloaded-list');
+        if (!container) return;
+
+        container.innerHTML = PRELOADED_QUIZZES.map(quiz => `
+            <div class="preloaded-item" data-id="${quiz.id}">
+                <div class="title">${quiz.title}</div>
+            </div>
+        `).join('');
+
+        container.querySelectorAll('.preloaded-item').forEach(item => {
+            item.onclick = () => {
+                const quizId = item.dataset.id;
+                const quiz = PRELOADED_QUIZZES.find(q => q.id === quizId);
+                if (quiz) {
+                    this.startPreloadedQuiz(quiz);
+                }
+            };
+        });
+    }
+
+    startPreloadedQuiz(quiz) {
+        this.ui.showView('workshop');
+        this.ui.clearLog();
+        this.ui.addLog('System', 'INFO', `Loading Quick Start: ${quiz.title}`);
+
+        // Simulate loading delay for effect
+        setTimeout(() => {
+            this.ui.addLog('System', 'INFO', 'Starting Quiz...');
+            this.engine.load(quiz.questions);
+            this.startQuiz();
+        }, 1000);
     }
 
 }
