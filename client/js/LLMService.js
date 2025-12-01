@@ -40,18 +40,38 @@ export class LLMService {
         return data.candidates[0].content.parts[0].text;
     }
 
-    async generateQuiz(parsedContent, weaknesses = []) {
+    async runResearch(parsedContent, weaknesses = []) {
         if (!this.token) throw new Error("Missing Access Token");
 
-        const response = await fetch('http://localhost:3001/api/quiz', {
+        const response = await fetch('http://localhost:3001/api/research', {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 token: this.token,
                 modelId: this.modelId,
-                content: parsedContent,  // Send full parsed content object
+                content: parsedContent,
+                weaknesses: weaknesses
+            })
+        });
+
+        if (!response.ok) {
+            const err = await response.text();
+            throw new Error(`Server Error: ${err}`);
+        }
+
+        return await response.json();
+    }
+
+    async generateQuizFromFacts(facts, weaknesses = []) {
+        if (!this.token) throw new Error("Missing Access Token");
+
+        const response = await fetch('http://localhost:3001/api/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                token: this.token,
+                modelId: this.modelId,
+                facts: facts,
                 weaknesses: weaknesses
             })
         });

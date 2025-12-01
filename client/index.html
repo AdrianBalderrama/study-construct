@@ -4,12 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Study Construct</title>
+    <title>Auto Study</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/bauhaus.css">
     <link rel="stylesheet" href="css/effects.css">
     <link rel="stylesheet" href="css/audio.css">
     <link rel="stylesheet" href="css/questions.css">
+
+    <!-- Google Fonts: Teko for Logo -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Teko:wght@700&display=swap" rel="stylesheet">
 
     <!-- PDF.js library for PDF parsing -->
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
@@ -17,10 +22,19 @@
 
 <body>
     <div class="app-container">
+        <!-- History Sidebar -->
+        <aside class="history-sidebar">
+            <h3>HISTORY</h3>
+            <div id="history-list" class="history-list">
+                <!-- History items injected by JS -->
+                <div class="history-empty">No tests taken yet.</div>
+            </div>
+        </aside>
+
         <!-- Header -->
         <header class="construct-header">
             <div class="logo-block">
-                <h1>STUDY<br>CONSTRUCT</h1>
+                <h1>AUTO<br>STUDY</h1>
             </div>
             <div class="header-controls">
                 <button id="settings-btn" class="shape-btn circle-btn" aria-label="Settings">
@@ -96,6 +110,14 @@
                 </div>
             </section>
         </main>
+
+        <!-- Pre-loaded Tests Sidebar -->
+        <aside class="preloaded-sidebar">
+            <h3>QUICK START</h3>
+            <div id="preloaded-list" class="preloaded-list">
+                <!-- Items injected by JS -->
+            </div>
+        </aside>
     </div>
 
     <!-- Settings Modal -->
