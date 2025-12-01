@@ -5,6 +5,8 @@ Studying complex technical documents is often a passive and inefficient process.
 Agents are the ideal solution because they can dynamically adapt to any content. Unlike static rule-based systems, an agentic architecture can "read" a document, "research" missing context, and "reason" about what makes a good question. By using specialized agents for different tasks—researching, generating questions, and reviewing quality—a team of expert tutors is simulated working in parallel to create a personalized study experience that scales instantly to any topic.
 
 ### Architecture
+![Architecture Diagram](architecture_diagram.png)
+
 Core to **Auto Study** is the `Team` class — a prime example of a **Multi-agent system**. It is not a monolithic application but an ecosystem of specialized agents, each contributing to a different stage of the study material creation process. This modular approach, facilitated by the **Google Agent Development Kit (ADK)**, allows for a sophisticated and robust workflow. The central orchestrator of this system is the `Team` class in `server/agent.js`.
 
 The `Team` orchestrates a pipeline of specialized sub-agents:
